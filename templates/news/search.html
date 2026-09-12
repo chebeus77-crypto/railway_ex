@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>AI 뉴스 큐레이션</h1>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">검색</button>
+</form>
+
+{% if results %}
+    <h2>선정된 기사</h2>
+    <ul>
+    {% for article in results %}
+        <li>
+            <a href="{{ article.link }}" target="_blank"><strong>{{ article.title }}</strong></a><br>
+            {{ article.summary|default:"요약이 없습니다." }}
+        </li>
+    {% endfor %}
+    </ul>
+{% endif %}
+{% endblock %}

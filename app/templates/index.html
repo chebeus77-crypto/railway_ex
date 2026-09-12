@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>사내 회의실 예약 시스템</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+    body { font-family: 'Noto Sans KR', sans-serif; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 min-h-screen text-white">
+
+  <!-- 헤더 -->
+  <header class="border-b border-white/10 backdrop-blur-sm bg-white/5 px-8 py-4 flex items-center gap-3">
+    <div class="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center text-white font-bold text-sm">🏢</div>
+    <h1 class="text-xl font-bold tracking-tight">사내 회의실 예약 시스템</h1>
+    <span class="ml-auto text-sm text-slate-400" id="today-label"></span>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- 좌측: 예약 입력 폼 -->
+    <div class="lg:col-span-1">
+      <div class="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
+        <h2 class="text-lg font-semibold mb-5 flex items-center gap-2">
+          <span class="text-indigo-400">✏️</span> 예약 등록
+        </h2>
+        <form id="reservationForm" class="space-y-4">
+          <!-- 예약자 이름 -->
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1">예약자 이름</label>
+            <input type="text" name="reserver_name" required placeholder="홍길동"
+              class="w-full rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-500
+                     px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" />
+          </div>
+          <!-- 회의실 선택 -->
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1">회의실</label>
+            <select name="room_name" required
+              class="w-full rounded-xl bg-white/10 border border-white/20 text-white
+                     px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+              <option value="" disabled selected class="bg-slate-800">회의실 선택</option>
+              <option value="A 회의실" class="bg-slate-800">A 회의실</option>
+              <option value="B 회의실" class="bg-slate-800">B 회의실</option>
+              <option value="C 회의실" class="bg-slate-800">C 회의실</option>
+              <option value="D 회의실" class="bg-slate-800">D 회의실</option>
+            </select>
+          </div>
+          <!-- 시작 시간 -->
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1">시작 시간</label>
+            <input type="datetime-local" name="start_time" required
+              class="w-full rounded-xl bg-white/10 border border-white/20 text-white
+                     px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition
+                     [color-scheme:dark]" />
+          </div>
+          <!-- 종료 시간 -->
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1">종료 시간</label>
+            <input type="datetime-local" name="end_time" required
+              class="w-full rounded-xl bg-white/10 border border-white/20 text-white
+                     px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition
+                     [color-scheme:dark]" />
+          </div>
+          <!-- 제출 버튼 -->
+          <button type="submit"
+            class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700
+                   font-semibold text-sm transition-all duration-200 shadow-lg shadow-indigo-900/50
+                   flex items-center justify-center gap-2">
+            <span>📅</span> 예약하기
+          </button>
+          <!-- 메시지 -->
+          <p id="msg" class="text-sm text-center font-medium min-h-[20px]"></p>
+        </form>
+      </div>
+
+      <!-- 오늘 예약 요약 -->
+      <div class="mt-4 bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-sm">
+        <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          <span>📊</span> 오늘 예약 요약
+        </h3>
+        <div id="summary" class="space-y-2 text-sm text-slate-400">로딩 중...</div>
+      </div>
+    </div>
+
+    <!-- 우측: 예약 현황 시간표 -->
+    <div class="lg:col-span-2">
+      <div class="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="text-lg font-semibold flex items-center gap-2">
+            <span class="text-indigo-400">🗓️</span> 오늘 예약 현황
+            <span class="text-slate-400 text-sm font-normal">(09:00 ~ 18:00)</span>
+          </h2>
+          <button onclick="loadSchedule()" class="text-xs text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1">
+            🔄 새로고침
+          </button>
+        </div>
+
+        <!-- 시간표 -->
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-sm" id="scheduleTable">
+            <thead>
+              <tr id="roomHeaders">
+                <th class="text-left py-2 px-3 text-slate-400 font-medium w-20 sticky left-0 bg-transparent">시간</th>
+              </tr>
+            </thead>
+            <tbody id="scheduleBody">
+              <tr><td colspan="10" class="text-center text-slate-500 py-8">로딩 중...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 현재 예약 목록 -->
+      <div class="mt-4 bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-sm">
+        <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          <span>📋</span> 오늘 예약 목록
+        </h3>
+        <div id="reservationList" class="space-y-2 max-h-48 overflow-y-auto">
+          <p class="text-sm text-slate-500">예약 정보를 불러오는 중...</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+<script>
+  const ROOMS = ['A 회의실', 'B 회의실', 'C 회의실', 'D 회의실'];
+
+  // 오늘 날짜 표시
+  const today = new Date();
+  document.getElementById('today-label').textContent =
+    today.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+
+  // datetime-local 기본값 설정
+  function padZ(n) { return n.toString().padStart(2, '0'); }
+  function getLocalDT(date) {
+    return `${date.getFullYear()}-${padZ(date.getMonth()+1)}-${padZ(date.getDate())}T${padZ(date.getHours())}:${padZ(date.getMinutes())}`;
+  }
+  const startInput = document.querySelector('[name="start_time"]');
+  const endInput = document.querySelector('[name="end_time"]');
+  const now = new Date();
+  const defaultStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0);
+  const defaultEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0);
+  startInput.value = getLocalDT(defaultStart);
+  endInput.value = getLocalDT(defaultEnd);
+
+  // 30분 단위 시간 슬롯 생성 (09:00 ~ 17:30)
+  function getTimeSlots() {
+    const slots = [];
+    for (let h = 9; h < 18; h++) {
+      slots.push(`${padZ(h)}:00`);
+      slots.push(`${padZ(h)}:30`);
+    }
+    return slots;
+  }
+
+  // 예약 현황 조회 및 렌더링
+  async function loadSchedule() {
+    let reservations = [];
+    try {
+      const res = await fetch('/api/reservations');
+      if (res.ok) reservations = await res.json();
+    } catch (e) {}
+
+    const slots = getTimeSlots();
+    const todayStr = today.toISOString().split('T')[0];
+
+    // 헤더 (회의실명)
+    const headers = document.getElementById('roomHeaders');
+    headers.innerHTML = `<th class="text-left py-2 px-3 text-slate-400 font-medium w-20">시간</th>`;
+    ROOMS.forEach(room => {
+      headers.innerHTML += `<th class="py-2 px-2 text-slate-300 font-medium text-center min-w-[120px]">${room}</th>`;
+    });
+
+    // 바디 (시간별 예약 현황)
+    const body = document.getElementById('scheduleBody');
+    body.innerHTML = '';
+
+    slots.forEach((slot, idx) => {
+      const [hh, mm] = slot.split(':').map(Number);
+      const slotStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hh, mm);
+      const slotEnd = new Date(slotStart.getTime() + 30 * 60 * 1000);
+
+      const row = document.createElement('tr');
+      row.className = idx % 2 === 0 ? 'bg-white/0 hover:bg-white/5 transition' : 'bg-white/3 hover:bg-white/5 transition';
+
+      let cells = `<td class="py-1.5 px-3 text-slate-400 text-xs font-mono">${slot}</td>`;
+
+      ROOMS.forEach(room => {
+        const booking = reservations.find(r => {
+          const rStart = new Date(r.start_time);
+          const rEnd = new Date(r.end_time);
+          return r.room_name === room && rStart < slotEnd && rEnd > slotStart;
+        });
+        if (booking) {
+          cells += `<td class="py-1.5 px-2">
+            <div class="rounded-lg bg-indigo-500/40 border border-indigo-400/50 px-2 py-1 text-xs text-center
+                        text-indigo-200 font-medium truncate" title="${booking.reserver_name}">
+              ${booking.reserver_name}
+            </div>
+          </td>`;
+        } else {
+          cells += `<td class="py-1.5 px-2"><div class="h-6"></div></td>`;
+        }
+      });
+
+      row.innerHTML = cells;
+      body.appendChild(row);
+    });
+
+    // 예약 목록 및 요약 업데이트
+    renderList(reservations);
+    renderSummary(reservations);
+  }
+
+  function renderList(reservations) {
+    const listEl = document.getElementById('reservationList');
+    if (reservations.length === 0) {
+      listEl.innerHTML = '<p class="text-sm text-slate-500">오늘 예약이 없습니다.</p>';
+      return;
+    }
+    const sorted = [...reservations].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+    listEl.innerHTML = sorted.map(r => {
+      const st = new Date(r.start_time);
+      const et = new Date(r.end_time);
+      const fmt = d => `${padZ(d.getHours())}:${padZ(d.getMinutes())}`;
+      return `<div class="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2 text-xs">
+        <span class="font-medium text-indigo-300">${r.room_name}</span>
+        <span class="text-slate-300">${fmt(st)} ~ ${fmt(et)}</span>
+        <span class="text-slate-200">${r.reserver_name}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function renderSummary(reservations) {
+    const summaryEl = document.getElementById('summary');
+    const roomCounts = {};
+    ROOMS.forEach(r => roomCounts[r] = 0);
+    reservations.forEach(r => { if (roomCounts[r.room_name] !== undefined) roomCounts[r.room_name]++; });
+
+    summaryEl.innerHTML = ROOMS.map(room => {
+      const count = roomCounts[room];
+      const bar = Math.min(count * 2, 18); // 최대 슬롯 18개
+      return `<div class="flex items-center gap-2">
+        <span class="w-20 text-xs text-slate-400 truncate">${room}</span>
+        <div class="flex-1 bg-white/10 rounded-full h-1.5">
+          <div class="bg-indigo-500 h-1.5 rounded-full transition-all" style="width:${(bar/18*100).toFixed(0)}%"></div>
+        </div>
+        <span class="text-xs text-slate-400 w-6">${count}건</span>
+      </div>`;
+    }).join('');
+  }
+
+  // 예약 폼 제출
+  document.getElementById('reservationForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const form = e.target;
+    const msgEl = document.getElementById('msg');
+    const btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = '예약 중...';
+
+    const data = {
+      reserver_name: form.reserver_name.value.trim(),
+      room_name: form.room_name.value,
+      start_time: form.start_time.value,
+      end_time: form.end_time.value,
+    };
+
+    try {
+      const res = await fetch('/api/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        msgEl.textContent = '✅ 예약이 완료되었습니다!';
+        msgEl.className = 'text-sm text-center font-medium text-emerald-400 min-h-[20px]';
+        form.reserver_name.value = '';
+        form.room_name.value = '';
+        await loadSchedule();
+      } else {
+        const err = await res.json();
+        msgEl.textContent = `❌ ${err.detail || '예약에 실패했습니다.'}`;
+        msgEl.className = 'text-sm text-center font-medium text-red-400 min-h-[20px]';
+      }
+    } catch (err) {
+      msgEl.textContent = '❌ 서버와 연결할 수 없습니다.';
+      msgEl.className = 'text-sm text-center font-medium text-red-400 min-h-[20px]';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<span>📅</span> 예약하기';
+    }
+  });
+
+  // 초기 로드
+  loadSchedule();
+</script>
+</body>
+</html>
