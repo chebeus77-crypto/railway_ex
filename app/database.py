@@ -8,11 +8,16 @@ from dotenv import load_dotenv
 env_path = Path(__file__).resolve().parents[1] / ".env"
 load_dotenv(dotenv_path=env_path)
 
-# 환경변수 이름은 database_URL (소문자)
-DATABASE_URL = os.getenv("database_URL")
+# 환경변수 이름: database_URL 또는 DATABASE_URL 호환 지원
+DATABASE_URL = os.getenv("database_URL") or os.getenv("DATABASE_URL")
+
 if not DATABASE_URL:
     # 로컬 개발용 SQLite 사용
     DATABASE_URL = "sqlite:///./sqlite.db"
+
+# Railway/PostgreSQL postgres:// -> postgresql:// 호환 변환
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # SQLite 전용 설정 (check_same_thread=False)
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
