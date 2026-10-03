@@ -8,7 +8,7 @@ Django와 Google Gemini API를 활용한 프로젝트입니다.
 - Python 3.12
 - [uv](https://docs.astral.sh/uv/) 패키지 매니저
 
-### 설치 및 실행
+### 설치 및 실행..
 
 ```powershell
 # 가상환경 생성 및 의존성 설치
